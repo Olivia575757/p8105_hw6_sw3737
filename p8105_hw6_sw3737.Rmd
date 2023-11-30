@@ -47,3 +47,9 @@ bootstrap_analysis = function(data, indices) {
 }
 ```
 
+## Perform bootstrap
+```{r}
+set.seed(123)
+results = boot(data = weather_df, statistic = bootstrap_analysis, R = 5000)
+```
+
