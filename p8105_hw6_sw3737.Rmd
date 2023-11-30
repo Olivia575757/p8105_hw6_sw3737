@@ -31,4 +31,19 @@ weather_df =
   ) |>
   select(name, id, everything())
 ```
+## Define the bootstrap function
+```{r}
+bootstrap_analysis = function(data, indices) {
+  sample_data = data[indices, ]
+  fit = lm(tmax ~ tmin + PRCP, data = sample_data)
+  
+  glance_data = glance(fit)
+  tidy_data = tidy(fit)
+
+  r_squared = glance_data[["r.squared"]]
+  log_beta_product = log(abs(tidy_data[2, "estimate"] * tidy_data[3, "estimate"]))
+
+  return(c(r_squared, log_beta_product))
+}
+```
 
