@@ -91,9 +91,9 @@ print(paste("95% CI for log(beta1 * beta2): Lower Bound = ", log_beta1_beta2_ci[
 
 ## Load and Clean the Data
 ```{r}
-birthweight_df <- read.csv("data/birthweight.csv")
+birthweight_df = read.csv("data/birthweight.csv")
 
-birthweight_df <- birthweight_df %>%
+birthweight_df = birthweight_df |>
   mutate(
     babysex = factor(babysex, levels = c(1, 2), labels = c("Male", "Female")),
     frace = factor(frace, levels = c(1, 2, 3, 4, 8, 9), labels = c("White", "Black", "Asian", "Puerto Rican", "Other", "Unknown")),
@@ -102,5 +102,20 @@ birthweight_df <- birthweight_df %>%
   )
 
 summary(birthweight_df)
+```
+
+## Regression Model
+```{r}
+model_hypothesis = lm(bwt ~ ppbmi + wtgain + smoken + gaweeks + babysex + malform, data = birthweight_df)
+summary(model_hypothesis)
+
+birthweight_df = birthweight_df |>
+  add_predictions(model_hypothesis) |>
+  add_residuals(model_hypothesis)
+
+ggplot(birthweight_df, aes(x = pred, y = resid)) +
+  geom_point(alpha = 0.3) +
+  geom_hline(yintercept = 0, linetype = "dashed") +
+  labs(x = "Fitted values", y = "Residuals", title = "Residuals vs Fitted Plot")
 ```
 
