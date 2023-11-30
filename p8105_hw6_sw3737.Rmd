@@ -53,3 +53,9 @@ set.seed(123)
 results = boot(data = weather_df, statistic = bootstrap_analysis, R = 5000)
 ```
 
+## Extract results
+```{r}
+r_squared_boot = results[["t"]][, 1]
+log_beta_product_boot = results[["t"]][, 2]
+```
+
