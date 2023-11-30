@@ -10,6 +10,7 @@ library(rnoaa)
 library(dplyr)
 library(ggplot2)
 library(broom)
+library(tidyverse)
 library(boot)
 ```
 
@@ -33,46 +34,49 @@ weather_df =
 ```
 ## Define the bootstrap function
 ```{r}
-bootstrap_analysis = function(data, indices) {
-  sample_data = data[indices, ]
-  fit = lm(tmax ~ tmin + PRCP, data = sample_data)
+bootstrap_fn <- function(data) {
+  sample_df <- data %>% sample_n(nrow(data), replace = TRUE)
+  model <- lm(tmax ~ tmin + prcp, data = sample_df)
+  tidy_model <- broom::tidy(model)
+  glance_model <- broom::glance(model)
   
-  glance_data = glance(fit)
-  tidy_data = tidy(fit)
-
-  r_squared = glance_data[["r.squared"]]
-  log_beta_product = log(abs(tidy_data[2, "estimate"] * tidy_data[3, "estimate"]))
-
-  return(c(r_squared, log_beta_product))
+  beta1_beta2 <- tidy_model$estimate[2] * tidy_model$estimate[3] # coefficients for tmin and PRCP
+  r_squared <- glance_model$r.squared
+  
+  return(c(r_squared, log(beta1_beta2)))
 }
 ```
 
 ## Perform bootstrap
 ```{r}
 set.seed(123)
-results = boot(data = weather_df, statistic = bootstrap_analysis, R = 5000)
-```
+bootstrap_results <- replicate(5000, bootstrap_fn(weather_df))
 
-## Extract results
-```{r}
-r_squared_boot = results[["t"]][, 1]
-log_beta_product_boot = results[["t"]][, 2]
+bootstrap_df <- as.data.frame(t(bootstrap_results))
+names(bootstrap_df) <- c("r_squared", "log_beta1_beta2")
 ```
 
 ## Plot the distributions
 ```{r}
-ggplot() + 
-  geom_density(aes(x = r_squared_boot), fill = "lightblue", alpha = 0.5) +
-  labs(title = "Distribution of R Squared Bootstrap Estimates",
-       x = "R Squared",
-       y = "Density") +
-  theme_minimal()
+# Plotting the distribution of r_squared
+ggplot(bootstrap_df, aes(x = r_squared)) +
+  geom_histogram(bins = 30, fill = "lightblue", alpha = 0.7) +
+  labs(title = "Distribution of r^2 Estimates", x = "r^2", y = "Frequency")
 
-ggplot() + 
-  geom_density(aes(x = log_beta_product_boot), fill = "pink", alpha = 0.5) +
-  labs(title = "Distribution of Log Beta Product Bootstrap Estimates",
-       x = "Log Beta Product",
-       y = "Density") +
-  theme_minimal()
+# Plotting the distribution of log_beta1_beta2
+ggplot(bootstrap_df, aes(x = log_beta1_beta2)) +
+  geom_histogram(bins = 30, fill = "pink", alpha = 0.7) +
+  labs(title = "Distribution of log(beta1 * beta2) Estimates", x = "log(beta1 * beta2)", y = "Frequency")
+```
+
+## Calculate and print the 95% confidence intervals
+```{r}
+# Calculating confidence intervals excluding NaNs
+r_squared_ci <- quantile(bootstrap_df$r_squared, c(0.025, 0.975), na.rm = TRUE)
+log_beta1_beta2_ci <- quantile(bootstrap_df$log_beta1_beta2, c(0.025, 0.975), na.rm = TRUE)
+
+# Displaying the results
+print(paste("95% CI for r^2: ", r_squared_ci))
+print(paste("95% CI for log(beta1 * beta2): ", log_beta1_beta2_ci))
 ```
 
