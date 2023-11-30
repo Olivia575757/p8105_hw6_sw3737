@@ -12,6 +12,7 @@ library(ggplot2)
 library(broom)
 library(tidyverse)
 library(boot)
+library(modelr)
 ```
 
 # Problem 2
@@ -73,7 +74,6 @@ ggplot(bootstrap_df, aes(x = log_beta1_beta2)) +
   labs(title = "Distribution of log(beta1 * beta2) Estimates", x = "log(beta1 * beta2)", y = "Frequency")
 ```
 
-
 The first histogram shows a slightly right-skewed distribution of r^2 estimates, clustering around values between 0.90 and 0.94, with a peak around 0.92. It indicates a common range of variance explained by the model in the bootstrap samples.
 
 The second histogram a right-skewed distribution of the logarithm of the beta coefficient, clustering around values between -8 and -4, with a peak around -6. The distribution has a left tail, indicating that some bootstrap samples resulted in lower estimates for the product of the coefficients.
@@ -85,5 +85,22 @@ log_beta1_beta2_ci = quantile(bootstrap_df$log_beta1_beta2, c(0.025, 0.975), na.
 
 print(paste("95% CI for r^2: Lower Bound = ", r_squared_ci[1], ", Upper Bound = ", r_squared_ci[2]))
 print(paste("95% CI for log(beta1 * beta2): Lower Bound = ", log_beta1_beta2_ci[1], ", Upper Bound = ", log_beta1_beta2_ci[2]))
+```
+
+# problem 3
+
+## Load and Clean the Data
+```{r}
+birthweight_df <- read.csv("data/birthweight.csv")
+
+birthweight_df <- birthweight_df %>%
+  mutate(
+    babysex = factor(babysex, levels = c(1, 2), labels = c("Male", "Female")),
+    frace = factor(frace, levels = c(1, 2, 3, 4, 8, 9), labels = c("White", "Black", "Asian", "Puerto Rican", "Other", "Unknown")),
+    malform = factor(malform, levels = c(0, 1), labels = c("Absent", "Present")),
+    mrace = factor(mrace, levels = c(1, 2, 3, 4, 8), labels = c("White", "Black", "Asian", "Puerto Rican", "Other"))
+  )
+
+summary(birthweight_df)
 ```
 
