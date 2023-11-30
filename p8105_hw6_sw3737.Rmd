@@ -59,3 +59,20 @@ r_squared_boot = results[["t"]][, 1]
 log_beta_product_boot = results[["t"]][, 2]
 ```
 
+## Plot the distributions
+```{r}
+ggplot() + 
+  geom_density(aes(x = r_squared_boot), fill = "lightblue", alpha = 0.5) +
+  labs(title = "Distribution of R Squared Bootstrap Estimates",
+       x = "R Squared",
+       y = "Density") +
+  theme_minimal()
+
+ggplot() + 
+  geom_density(aes(x = log_beta_product_boot), fill = "pink", alpha = 0.5) +
+  labs(title = "Distribution of Log Beta Product Bootstrap Estimates",
+       x = "Log Beta Product",
+       y = "Density") +
+  theme_minimal()
+```
+
