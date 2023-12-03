@@ -44,13 +44,14 @@ bootstrap_fn = function(data) {
   tidy_model = broom::tidy(model)
   glance_model = broom::glance(model)
   
-  beta1_beta2 = tidy_model$estimate[2] * tidy_model$estimate[3]
+  estimates = pull(tidy_model, "estimate")
+  beta1_beta2 = estimates[2] * estimates[3]
   if (beta1_beta2 > 0) {
     log_beta1_beta2 = log(beta1_beta2)
   } else {
     log_beta1_beta2 = NA
   }
-  r_squared = glance_model$r.squared
+  r_squared = pull(glance_model, "r.squared")
   
   return(c(r_squared, log_beta1_beta2))
 }
@@ -68,11 +69,11 @@ names(bootstrap_df) = c("r_squared", "log_beta1_beta2")
 ## Plot the distributions
 ```{r}
 ggplot(bootstrap_df, aes(x = r_squared)) +
-  geom_histogram(bins = 30, fill = "lightblue", alpha = 0.7) +
+  geom_density(fill = "lightblue") +
   labs(title = "Distribution of r^2 Estimates", x = "r^2", y = "Frequency")
 
 ggplot(bootstrap_df, aes(x = log_beta1_beta2)) +
-  geom_histogram(bins = 30, fill = "pink", alpha = 0.7) +
+  geom_density(fill = "pink") +
   labs(title = "Distribution of log(beta1 * beta2) Estimates", x = "log(beta1 * beta2)", y = "Frequency")
 ```
 
@@ -82,14 +83,18 @@ The second histogram a right-skewed distribution of the logarithm of the beta co
 
 ## Calculate and print the 95% confidence intervals
 ```{r}
-r_squared_ci = quantile(bootstrap_df$r_squared, c(0.025, 0.975), na.rm = TRUE)
-log_beta1_beta2_ci = quantile(bootstrap_df$log_beta1_beta2, c(0.025, 0.975), na.rm = TRUE)
+r_squared_ci = quantile(pull(bootstrap_df, "r_squared"), c(0.025, 0.975), na.rm = TRUE)
+log_beta1_beta2_ci = quantile(pull(bootstrap_df, "log_beta1_beta2"), c(0.025, 0.975), na.rm = TRUE)
 
 print(paste("95% CI for r^2: Lower Bound = ", r_squared_ci[1], ", Upper Bound = ", r_squared_ci[2]))
 print(paste("95% CI for log(beta1 * beta2): Lower Bound = ", log_beta1_beta2_ci[1], ", Upper Bound = ", log_beta1_beta2_ci[2]))
 ```
 
-# problem 3
+95% CI for r^2: Lower Bound =  0.888207887270769 , Upper Bound =  0.94025517661439
+
+95% CI for log(beta1 * beta2): Lower Bound =  -9.0632139063287 , Upper Bound =  -4.61926736850544
+
+# Problem 3
 
 ## Load and Clean the Data
 ```{r}
