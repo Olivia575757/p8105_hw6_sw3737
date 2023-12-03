@@ -93,54 +93,70 @@ print(paste("95% CI for log(beta1 * beta2): Lower Bound = ", log_beta1_beta2_ci[
 
 ## Load and Clean the Data
 ```{r}
-# Load the data
-birthweight_df = read.csv("data/birthweight.csv")
-
-# Convert categorical variables to factors
-categorical_vars = c("babysex", "frace", "malform", "mrace")
-birthweight_df[categorical_vars] = lapply(birthweight_df[categorical_vars], factor)
-
-# Check for missing data and decide how to handle it
-summary(birthweight_df)
+birthweight = read.csv("data/birthweight.csv")
+birthweight_df = 
+  birthweight |>
+  janitor::clean_names() |>
+  mutate(
+    babysex = as.factor(babysex),
+    frace = as.factor(frace),
+    malform = as.factor(malform),
+    mrace = as.factor(mrace),
+  ) |>
+  drop_na()
 ```
 
 ## Regression Model
 ```{r}
-# Fit the regression model
-birthweight_model = lm(bwt ~ babysex + bhead + mheight + ppbmi + smoken, data = birthweight_df)
-summary(birthweight_model)
+model = lm(bwt ~ blength + gaweeks + ppbmi + smoken + wtgain + babysex + bhead + frace, data = birthweight_df)
 
-# Add predictions and residuals
+broom::tidy(model)
+broom::glance(model)
+
+summary(model)
+```
+
+### Modeling Process
+(1) Initial model: I used a linear regression to build a model predicting baby's birth weight, the choice of predictors was based on my understanding of what factors might influence birth weight. It included `length`, `gaweeks`, `malform`, `ppbmi`, `smoken` and `wtgain`.
+(2) Adjust model (data-driven approach): Upon observing that the current r^2 is relatively low, I was opting to adjust the model by removing `malform` (as its p-value exceeds 0.05), introducing `babysex`, `bhead` and `frace` (which increase r^2) as additional predictors. Now it has a stronger correlation with birth weight.
+
+## Residual Analysis
+```{r}
 birthweight_df = birthweight_df |>
-  add_predictions(birthweight_model) |>
-  add_residuals(birthweight_model)
+  add_predictions(model) |>
+  add_residuals(model)
 
-# Plot residuals against fitted values
 ggplot(birthweight_df, aes(x = pred, y = resid)) +
   geom_point(alpha = 0.5) +
   labs(x = "Fitted values", y = "Residuals") +
   geom_hline(yintercept = 0, linetype = "dashed", color = "red")
 ```
 
+### Interpretation of Plot
+The majority of the data points are clustered around the horizontal line at zero. However, there is a pattern where the residuals appear to fan out as the fitted values increase, suggesting potential heteroscedasticity. A few outliers are also evident, particularly for larger residuals.
+
 ## Compare Models Using Cross-Validated Prediction Error
 ```{r}
-cv_error = function(df, model_formula) {
-  crossv_mc(df, 100) |>
-    mutate(
-      test_results = map(.x = test, .f = ~lm(model_formula, data = .x)),
-      test_predictions = map2(.x = test_results, .y = test, .f = ~add_predictions(.y, .x)),
-      test_residuals = map2(.x = test_predictions, .y = test, .f = ~add_residuals(.y, .x))
-    ) |>
-    unnest(test_residuals) |>
-    summarize(mse = mean(resid^2))
-}
+model_1 = lm(bwt ~ blength + gaweeks, data = birthweight_df)
+model_2 = lm(bwt ~ bhead * blength * babysex, data = birthweight_df)
 
-model1_formula = bwt ~ blength + gaweeks
-model1_error = cv_error(birthweight_df, model1_formula)
+cv_df = 
+  crossv_mc(birthweight_df, 100)
+cv_df = cv_df |>
+  mutate(
+    train = map(train, as.tibble),
+    test = map(test, as.tibble)
+  ) |>
+  mutate(
+    model = map
+  ) |>
+  mutate(
+    rmse_1 = map_dbl(model, ~rmse(model = model_1, data = .x)),
+    rmse_2 = map_dbl(model, ~rmse(model = model_2, data = .x)),
+    rmse_your_model = map_dbl(model, ~rmse(model = model, data = .x))
+  )
 
-model2_formula = bwt ~ bhead * blength * babysex
-model2_error = cv_error(birthweight_df, model2_formula)
-
-print(model1_error)
-print(model2_error)
+summary(cv_df)
 ```
+
+
