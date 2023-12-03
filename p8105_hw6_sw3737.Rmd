@@ -161,3 +161,25 @@ cv_df = cv_df |>
 summary(cv_df)
 ```
 
+## Create a Violin Plot
+```{r}
+cv_df_long = cv_df |>
+  select(rmse_model, rmse_model_1, rmse_model_2) |>
+  pivot_longer(
+    cols = everything(),
+    names_to = "model",
+    values_to = "rmse"
+  ) |>
+  mutate(model = factor(model, levels = c("rmse_model", "rmse_model_1", "rmse_model_2")))
+
+ggplot(cv_df_long, aes(x = model, y = rmse, fill = model)) +
+  geom_violin(trim = FALSE) +
+  labs(
+    title = "Comparison of RMSE Across Models",
+    x = "Model",
+    y = "Root Mean Squared Error (RMSE)"
+  ) +
+  theme_minimal()
+```
+
+My model has the widest distribution, indicating variability in its prediction errors across the cross-validation folds. The rmse_model_1 (length and gestational age) has the narrowest distribution, suggesting more consistent predictions. The rmse_model_2 (interaction of head circumference, length, sex) has a distribution that is more compact than my model but less so than rmse_model_1. The median RMSE appears to be lowest for rmse_model_1, indicating it may have the best predictive accuracy on average, although the plot suggests there is some overlap in the RMSE distributions of the three models.
